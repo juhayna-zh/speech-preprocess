@@ -1,7 +1,7 @@
 #### general settings
 name: bsrnn_minx
 device: cuda
-gpuid: [0,1,2,3,4,5,6,7]
+gpuid: null
 
 #### datasets setings
 datasets:
@@ -15,23 +15,23 @@ model:
   win: 2048
   stride: 512
   feature_dim: 80
-  num_layer: 5
-  num_spk_layer: 5
+  num_layer: 6
+  num_spk_layer: 4
   same_mask: true
 
 #### training settings: learning rate scheme, loss
 train:
   epoch: 100
-  batch_size: 8
+  batch_size: 1
   early_stop: 10
   sub_batch: 2000
-  save_stat_dir: /mnt/lustre/sjtu/home/hnz01/code/AILabInTask1/speech-preprocess/save/p55s_8w/trainstat
-  save_model_dir: /mnt/lustre/sjtu/home/hnz01/code/AILabInTask1/speech-preprocess/save/p55s_8w/checkpoint
+  save_stat_dir: /mnt/lustre/sjtu/home/hnz01/code/AILabInTask1/speech-preprocess/save/x64s_8w/trainstat
+  save_model_dir: /mnt/lustre/sjtu/home/hnz01/code/AILabInTask1/speech-preprocess/save/x64s_8w/checkpoint
 
 #### Optimizer settings
 optim:
   name: Adam   ### Adam, RMSprop, SGD
-  lr: !!float 5e-3
+  lr: !!float 5e-4
   momentum: 0
   weight_decay: 0
   clip_norm: 5

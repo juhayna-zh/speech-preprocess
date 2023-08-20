@@ -161,4 +161,8 @@ class Tester:
             for k in metrics:
                 metrics[k] /= cnt
                 print(f'{k}: {metrics[k]}')
+            with open(self.save_path+os.sep+'result.csv','w') as f:
+                f.write('Metric,Value\n')
+                for k in metrics:
+                    f.write(f'{k},{metrics[k]}\n')
 

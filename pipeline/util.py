@@ -1,5 +1,6 @@
 import torch
 from itertools import permutations
+from torch.nn.parallel import DataParallel
 
 def sisnr(x, s, eps=1e-8):
     """
@@ -64,7 +65,6 @@ def collate_fn(batch):
     return padded_batch_mix, padded_batch_spk1, padded_batch_spk2, sr
  
 def listify_collate_fn(batch):
-    '''list化的收集函数,不会把语音对齐打包为张量,而是打包为list,供DataParallel训练使用'''
     max_len = max([(d[0].shape[-1]) for d in batch])
     batch_mix = []
     batch_spk1 = []
@@ -79,3 +79,12 @@ def listify_collate_fn(batch):
         batch_spk2.append(spk2.unsqueeze(0))
 
     return batch_mix, batch_spk1, batch_spk2, sr
+
+class ListAllowDataPrallel(DataParallel):
+    def scatter(self, inputs, kwargs, device_ids):
+        print(tuple([(inp.shape,) for inp in inputs[0]]))
+        return tuple([(inp.to('cuda:'+str(device_ids[i])),) for i,inp in enumerate(inputs[0])]), None
+    
+    def gather(self, outputs, output_device):
+        return tuple([out[0].to('cuda:'+str(output_device)) for out in outputs]),\
+            tuple([out[1].to('cuda:'+str(output_device)) for out in outputs])

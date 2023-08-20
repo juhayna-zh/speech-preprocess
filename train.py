@@ -3,7 +3,7 @@ from model import create_BSRNN
 import argparse
 import yaml
 import os
-os.environ['CUDA_VISIBLE_DEVICES'] = '7'
+# os.environ['CUDA_VISIBLE_DEVICES'] = '7'
 from shutil import copyfile
 
 def main(args):
