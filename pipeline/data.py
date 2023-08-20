@@ -71,6 +71,43 @@ class MixnAudioDataset(Dataset):
             if self.sub_batch * self.current_sub_batch >= len(self.metadata):
                 self.current_sub_batch = 0
 
+
+def get_filenames(data_dir):
+        return [f for f in os.listdir(data_dir+os.sep+'mixn') if f[-4:] in ('.wav','.mp3','flac','.ogg')]
+
+class TestMixnAudioDataset(Dataset):
+    def __init__(self, data_dir:str, filenames, sub_id, num_threads, sr=44100, no_GT=False):
+        super().__init__()
+        self.data_dir = data_dir
+        self.sr = sr
+        self.no_GT = no_GT
+        
+        total = len(filenames)
+        self.filenames = [filenames[i] for i in range(sub_id, total, num_threads)] 
+
+    def __getitem__(self, i):
+        filename = self.filenames[i]
+        mixn_audio = read_audio(self.mixn_dir_+filename, resample_sr=self.sr)
+        spk1_audio = None if self.no_GT else read_audio(self.spk1_dir_+filename, resample_sr=self.sr)
+        spk2_audio = None if self.no_GT else read_audio(self.spk2_dir_+filename, resample_sr=self.sr)
+        return mixn_audio, spk1_audio, spk2_audio, self.sr, filename
+    
+    def __len__(self):
+        return len(self.filenames)
+    
+    @property 
+    def mixn_dir_(self):
+        return self.data_dir+os.sep+'mixn'+os.sep
+
+    @property 
+    def spk1_dir_(self):
+        return self.data_dir+os.sep+'spk1'+os.sep
+    
+    @property 
+    def spk2_dir_(self):
+        return self.data_dir+os.sep+'spk2'+os.sep
+    
+
 if __name__ == '__main__':
     dataset = MixnAudioDataset(
         '/mnt/lustre/sjtu/home/hnz01/code/AILabInTask1/speech-preprocess/data/DatasetTest12h',
