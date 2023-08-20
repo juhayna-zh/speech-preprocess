@@ -63,3 +63,19 @@ def collate_fn(batch):
         
     return padded_batch_mix, padded_batch_spk1, padded_batch_spk2, sr
  
+def listify_collate_fn(batch):
+    '''list化的收集函数,不会把语音对齐打包为张量,而是打包为list,供DataParallel训练使用'''
+    max_len = max([(d[0].shape[-1]) for d in batch])
+    batch_mix = []
+    batch_spk1 = []
+    batch_spk2 = []
+
+    sr = batch[0][3]
+
+    for i, d in enumerate(batch):
+        mix, spk1, spk2, _ = d
+        batch_mix.append(mix.unsqueeze(0))
+        batch_spk1.append(spk1.unsqueeze(0))
+        batch_spk2.append(spk2.unsqueeze(0))
+
+    return batch_mix, batch_spk1, batch_spk2, sr
