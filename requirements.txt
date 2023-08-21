@@ -1,0 +1,10 @@
+torch
+tqdm
+torchaudio
+torchmetrics
+torchmetrics[audio]
+thop
+loguru
+jsonlines 
+pesq
+pyyaml

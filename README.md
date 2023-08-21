@@ -5,22 +5,22 @@ A repo for a solution to denoising and separating for two-speeker-mixed noisy sp
 View demos [here](https://harsh-lawyer-1d0.notion.site/Speech-Preprocess-3d33405d571840148e6b70c87edf3731?pvs=4).
 
 
-### Network Architecture 💡
+## Network Architecture 💡
 
 <img src="md/structure.png" width="80%">
 
-### Model Basics ✔️
+## Model Basics ✔️
 
 |*Key*         | *VAlue*                  |
 | ----------- | ---------------------- |
-| Datasets     | AI Shell-3 & NoiseX-92 |
+| Datasets     | AISHELL-3 & NoiseX-92 |
 | FLOPs       | 2.408G                 |
 | Weights Size | 61.95M                 |
 | Parameters  | 16.15M                 |
 
 <br/>
 
-### Important Metrics 🧭
+## Important Metrics 🧭
 **Naive Case (only mix, no noise)**
 
 | Metric          | SI-SNR | PESQ(wb) | PESQ(nb) | STOI  |
@@ -39,5 +39,31 @@ View demos [here](https://harsh-lawyer-1d0.notion.site/Speech-Preprocess-3d33405
 
 <br/>
 
-### Training Visualization 📉
+## Test & Train
+Python version is 3.8. Requirements can be installed by:
+```
+pip install -r requirements.txt
+```
+See [this](https://github.com/ludlows/PESQ) if installing the dependency `pesq` fails.
+
+### Test
+Modify `config/test.yml` with your own dataset path, and run following command:
+```
+python speech-preprocess/test.py
+```
+
+### Train
+Follow the order in `data/index_data.py` and `data/make_data.py` to config your raw dataset. 
+Then run following commands to make index and generate data:
+```
+python data/index_data.py
+python data/make_data.py
+```
+For this project, [AISHELL-3](https://www.aishelltech.com/aishell_3) and [NoiseX-92](https://github.com/speechdnn/Noises) datasets are used.
+Then, modify the config file `config/train.yml` and run following command:
+```
+python speech-preprocess/train.py
+```
+
+## Training Visualization 📉
 <img src="md/train.png" width="400px">
