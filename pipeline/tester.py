@@ -7,7 +7,7 @@ from torch.utils.data import DataLoader
 from data import TestMixnAudioDataset, get_filenames
 import threading
 import torchaudio
-from torchmetrics.audio.snr import SignalNoiseRatio, ScaleInvariantSignalNoiseRatio
+from torchmetrics.audio.snr import ScaleInvariantSignalNoiseRatio
 from torchmetrics.audio.pesq import PerceptualEvaluationSpeechQuality
 from torchmetrics.audio.stoi import ShortTimeObjectiveIntelligibility
 import torchaudio
@@ -45,7 +45,7 @@ class Tester:
         self.result = [[] for _ in range(self.num_threads)] #每个线程结束前将指标结果保存在此
             
     def metric(self, audio_ests, audio_refs, sr, *, opr):
-        snr, sisnr, pesq_wb, pesq_nb, stoi = opr #本线程的评估指标
+        sisnr, pesq_wb, pesq_nb, stoi = opr #本线程的评估指标
 
         spk1_est, spk2_est = audio_ests
         spk1, spk2 = audio_refs
@@ -55,15 +55,14 @@ class Tester:
         if sisnr_swap > sisnr:
             sisnr = sisnr_swap
             spk1, spk2 = spk2, spk1
-            
-        snr = (snr(spk1_est, spk1).item() + snr(spk2_est, spk2).item()) / 2
+        
         stoi = (stoi(spk1_est, spk1).item() + stoi(spk2_est, spk2).item()) / 2
         pesq_wb1, pesq_nb1 = self.calc_pesq(spk1_est, spk1, sr, opr=(pesq_wb,pesq_nb))
         pesq_wb2, pesq_nb2 = self.calc_pesq(spk2_est, spk2, sr, opr=(pesq_wb,pesq_nb))
         pesq_wb = (pesq_wb1 + pesq_wb2) / 2
         pesq_nb = (pesq_nb1 + pesq_nb2) / 2
 
-        return {'snr':snr, 'sisnr':sisnr, 'pesq_wb':pesq_wb, 'pesq_nb':pesq_nb, 'stoi':stoi}
+        return {'sisnr':sisnr, 'pesq_wb':pesq_wb, 'pesq_nb':pesq_nb, 'stoi':stoi}
         
             
     def calc_pesq(self, audio_est, audio_ref, sr, opr):
@@ -105,12 +104,11 @@ class Tester:
                                 batch_size=1, shuffle=False
         )    
         #初始化需要的指标
-        snr = SignalNoiseRatio().to(device)
         sisnr = ScaleInvariantSignalNoiseRatio().to(device)
         pesq_wb = PerceptualEvaluationSpeechQuality(16e3, mode='wb').to(device)
         pesq_nb = PerceptualEvaluationSpeechQuality(16e3, mode='nb').to(device)
         stoi = ShortTimeObjectiveIntelligibility(self.sr).to(device)
-        opr = (snr, sisnr, pesq_wb, pesq_nb, stoi) #打包,以供传参
+        opr = (sisnr, pesq_wb, pesq_nb, stoi) #打包,以供传参
         for mixn, spk1, spk2, sr, filename in dataloader:
             cnt += 1
             #首先,将所有的数据移入对应设备.仅当使用评估时才移动GT的数据
@@ -132,7 +130,7 @@ class Tester:
                 torchaudio.save(self.save_spk2(filename[0]), spk2_est.squeeze(0).cpu(), sr.item())
             #计算并收集指标
             if not self.no_criterion:
-                m = self.metric((spk1_est, spk2_est), (spk1, spk2), sr.item(), opr=opr)
+                m = self.metric((spk1_est.squeeze(), spk2_est.squeeze()), (spk1.squeeze(), spk2.squeeze()), sr.item(), opr=opr)
                 for k,v in m.items():
                     metrics[k] += v
             logger.info(f"Thread[{sub_id}]: finish test '{filename[0]}'.")
@@ -148,7 +146,7 @@ class Tester:
         #以下,为每个线程分配设备
         #如果设备数少于或等于线程数,则依次分配
         #如果GPU数量超过线程数,则启动data_parallel,为线程分配多个设备
-        if len(self.gpuid) > self.num_threads:
+        if self.gpuid is not None and len(self.gpuid) > self.num_threads:
             i = 0
             gpu_dist = [[] for _ in range(self.num_threads)]
             for gpu in self.gpuid:

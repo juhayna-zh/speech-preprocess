@@ -60,10 +60,11 @@ python data/index_data.py
 python data/make_data.py
 ```
 For this project, [AISHELL-3](https://www.aishelltech.com/aishell_3) and [NoiseX-92](https://github.com/speechdnn/Noises) datasets are used.
+
 Then, modify the config file `config/train.yml` and run following command:
 ```
 python speech-preprocess/train.py
 ```
 
 ## Training Visualization 📉
-<img src="md/train.png" width="400px">
+<img src="md/train.png" width="550px">
