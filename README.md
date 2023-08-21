@@ -10,8 +10,6 @@ View demos [here](https://harsh-lawyer-1d0.notion.site/Speech-Preprocess-3d33405
 
 ![Struture](md/structure.png)
 
-<br/>
-
 ### Model Basics ✔️
 
 |*Key*         | *VAlue*                  |
