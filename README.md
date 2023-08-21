@@ -4,11 +4,10 @@ A repo for a solution to denoising and separating for two-speeker-mixed noisy sp
 
 View demos [here](https://harsh-lawyer-1d0.notion.site/Speech-Preprocess-3d33405d571840148e6b70c87edf3731?pvs=4).
 
-<br/>
 
 ### Network Architecture 💡
 
-![Struture](md/structure.png)
+<img src="md/structure.png" width="80%">
 
 ### Model Basics ✔️
 
@@ -41,4 +40,4 @@ View demos [here](https://harsh-lawyer-1d0.notion.site/Speech-Preprocess-3d33405
 <br/>
 
 ### Training Visualization 📉
-![Train](md/train.png)
+<img src="md/train.png" width="400px">
