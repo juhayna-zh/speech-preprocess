@@ -4,10 +4,13 @@ A repo for a solution to denoising and separating for two-speeker-mixed noisy sp
 
 View demos [here](https://harsh-lawyer-1d0.notion.site/Speech-Preprocess-3d33405d571840148e6b70c87edf3731?pvs=4).
 
+<br/>
 
 ### Network Architecture 💡
 
 ![Struture](md/structure.png)
+
+<br/>
 
 ### Model Basics ✔️
 
@@ -18,6 +21,7 @@ View demos [here](https://harsh-lawyer-1d0.notion.site/Speech-Preprocess-3d33405
 | Weights Size | 61.95M                 |
 | Parameters  | 16.15M                 |
 
+<br/>
 
 ### Important Metrics 🧭
 **Naive Case (only mix, no noise)**
@@ -36,7 +40,7 @@ View demos [here](https://harsh-lawyer-1d0.notion.site/Speech-Preprocess-3d33405
 | Raw dataset     | 1.820   | -0.597 | 1.146    | 1.379    | 0.656 |
 | BSRNN(modified) | -19.321 | 11.384 | 2.212    | 2.661    | 0.880 |
 
-
+<br/>
 
 ### Training Visualization 📉
 ![Train](md/train.png)
