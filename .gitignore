@@ -1,9 +1,11 @@
 *.wav
 *.jsonl
-data/*
+# data/*
 *.pt
 __pycache__/
 *.py[cod]
 *.csv
 save/*
 !data/*.py
+!data/Difficult30/**
+!data/train_index.jsonl
