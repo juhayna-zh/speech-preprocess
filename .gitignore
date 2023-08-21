@@ -5,7 +5,9 @@ data/*
 __pycache__/
 *.py[cod]
 *.csv
-save/*
+save/*/trainstat/config.yml
 !data/*.py
 !data/Difficult30/**
 !data/train_index.jsonl
+!save/x64s_8w/trainstat/*
+!save/x64s_8w/checkpoint/best_model.pt
