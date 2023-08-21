@@ -24,19 +24,19 @@ View demos [here](https://harsh-lawyer-1d0.notion.site/Speech-Preprocess-3d33405
 ### Important Metrics 🧭
 **Naive Case (only mix, no noise)**
 
-| Metric          | SNR     | SI-SNR | PESQ(wb) | PESQ(nb) | STOI  |
-| --------------- | ------- | ------ | -------- | -------- | ----- |
-| Raw dataset     | 1.936   | 0.002  | 1.240    | 1.473    | 0.681 |
-| BSRNN(modified) | -19.473 | 12.195 | 2.453    | 2.866    | 0.901 |
+| Metric          | SI-SNR | PESQ(wb) | PESQ(nb) | STOI  |
+| --------------- | ------ | -------- | -------- | ----- |
+| Raw dataset     | 0.002  | 1.240    | 1.473    | 0.681 |
+| BSRNN(modified) | 12.195 | 2.453    | 2.866    | 0.901 |
 
 
 
 **Difficult Case (with mix & noise)**
 
-| Metric          | SNR     | SI-SNR | PESQ(wb) | PESQ(nb) | STOI  |
-| --------------- | ------- | ------ | -------- | -------- | ----- |
-| Raw dataset     | 1.820   | -0.597 | 1.146    | 1.379    | 0.656 |
-| BSRNN(modified) | -19.321 | 11.384 | 2.212    | 2.661    | 0.880 |
+| Metric          | SI-SNR | PESQ(wb) | PESQ(nb) | STOI  |
+| --------------- | ------ | -------- | -------- | ----- |
+| Raw dataset     | -0.597 | 1.146    | 1.379    | 0.656 |
+| BSRNN(modified) | 11.384 | 2.212    | 2.661    | 0.880 |
 
 <br/>
 
