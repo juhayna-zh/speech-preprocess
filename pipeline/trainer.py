@@ -12,17 +12,18 @@ from torch.optim.lr_scheduler import ReduceLROnPlateau
 
 class Trainer:
     def __init__(self, model, opt) -> None:
-        self.train_data_dir = opt['datasets']['train_data_dir']
-        self.test_data_dir = opt['datasets']['test_data_dir']
-        self.save_stat_dir = opt['train']['save_stat_dir']
-        self.save_model_dir = opt['train']['save_model_dir']
+        self.train_data_dir = opt['datasets']['train_data_dir'] #训练数据的目录
+        self.test_data_dir = opt['datasets']['test_data_dir'] #测试数据的目录
+        self.save_stat_dir = opt['train']['save_stat_dir'] #保存统计结果(csv文件)的目录
+        self.save_model_dir = opt['train']['save_model_dir'] #保存模型checkpoint的目录
         self.device = opt['device']
         self.model = model.to(self.device) 
-        self.gpuid = opt['gpuid']
+        self.gpuid = opt['gpuid'] #可供使用的GPU序号,如果为空则使用默认设备
 
         self.batch_size = opt['train']['batch_size']
+        #是否使用sub_batch,用于特大数据集.即在原本的batch的基础上每sub_batch个数据就进行一次验证.
         self.sub_batch = opt['train']['sub_batch']
-
+        
         self.train_dataset = MixnAudioDataset(self.train_data_dir, preload=False, sub_batch=self.sub_batch)
 
         self.train_dataloader = DataLoader(self.train_dataset, batch_size=self.batch_size, shuffle=True, collate_fn=collate_fn)
@@ -161,12 +162,12 @@ class Trainer:
         train_loss = []
         val_loss = []
         self.save_checkpoint(self.cur_epoch, best=False)
-        # v_loss = self.validation(self.cur_epoch)
-        # best_loss = v_loss
+        v_loss = self.validation(self.cur_epoch)
+        best_loss = v_loss
         
-        # logger.info("Starting epoch from {:d}, loss = {:.4f}".format(
-            # self.cur_epoch, best_loss))
-        best_loss = 1e8
+        logger.info("Starting epoch from {:d}, loss = {:.4f}".format(
+            self.cur_epoch, best_loss))
+        # best_loss = 1e8
         
         no_improve = 0
 
@@ -174,7 +175,7 @@ class Trainer:
         while self.cur_epoch < self.total_epoch:
             self.cur_epoch += 1
             t_loss = self.train(self.cur_epoch)
-            self.train_dataset.next_epoch()
+            self.train_dataset.next_epoch() #如果使用sub_batch,则需要手动通知数据集更换数据批次
             v_loss = self.validation(self.cur_epoch)
 
             train_loss.append(t_loss)
@@ -206,8 +207,7 @@ class Trainer:
     
     def save_checkpoint(self, epoch, best=True):
         '''
-           save model
-           best: the best model
+           保存模型参数,以及训练相关的optimizer信息
         '''
         os.makedirs(self.save_model_dir, exist_ok=True)
         torch.save({

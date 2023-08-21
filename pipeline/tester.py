@@ -17,13 +17,14 @@ from collections import defaultdict
 class Tester:
     def __init__(self, make_model, opt, train_opt) -> None:
         self.make_model = make_model
-        self.data_path = opt['test']['data_path']
-        self.save_path = opt['test']['save_path']
-        self.num_threads = opt['test']['num_threads']
-        self.no_criterion = opt['test']['no_criterion']
-        self.measure_dataset_only = opt['test']['measure_dataset_only']
+        self.data_path = opt['test']['data_path'] #数据加载目录
+        self.save_path = opt['test']['save_path'] #音频结果保存目录
+        self.num_threads = opt['test']['num_threads'] #线程数
+        self.no_criterion = opt['test']['no_criterion'] #是否仅预测,不评估指标
+        self.measure_dataset_only = opt['test']['measure_dataset_only'] #是否仅评估数据集,不预测
 
         if self.measure_dataset_only:
+            #如果仅评估数据集,则结果(csv文件)保存目录改为数据所在目录
             self.save_path = self.data_path
 
         self.make_dirs()
@@ -39,18 +40,18 @@ class Tester:
         else: 
             self.devices = ['cuda:'+str(i) for i in opt['gpuid']]
 
-        self.gpuid = opt['gpuid']
+        self.gpuid = opt['gpuid'] #可供使用的GPU序号
       
-        self.result = [[] for _ in range(self.num_threads)]
+        self.result = [[] for _ in range(self.num_threads)] #每个线程结束前将指标结果保存在此
             
     def metric(self, audio_ests, audio_refs, sr, *, opr):
-        snr, sisnr, pesq_wb, pesq_nb, stoi = opr
+        snr, sisnr, pesq_wb, pesq_nb, stoi = opr #本线程的评估指标
 
         spk1_est, spk2_est = audio_ests
         spk1, spk2 = audio_refs
         sisnr_swap = (sisnr(spk1_est, spk2).item() + sisnr(spk2_est, spk1).item()) / 2
         sisnr = (sisnr(spk1_est, spk1).item() + sisnr(spk2_est, spk2).item()) / 2
-
+        #根据sisnr确认speaker的顺序
         if sisnr_swap > sisnr:
             sisnr = sisnr_swap
             spk1, spk2 = spk2, spk1
@@ -103,19 +104,21 @@ class Tester:
                                 sub_id=sub_id, num_threads=self.num_threads, no_GT=self.opt['test']['no_criterion']),
                                 batch_size=1, shuffle=False
         )    
-        
+        #初始化需要的指标
         snr = SignalNoiseRatio().to(device)
         sisnr = ScaleInvariantSignalNoiseRatio().to(device)
         pesq_wb = PerceptualEvaluationSpeechQuality(16e3, mode='wb').to(device)
         pesq_nb = PerceptualEvaluationSpeechQuality(16e3, mode='nb').to(device)
         stoi = ShortTimeObjectiveIntelligibility(self.sr).to(device)
-        opr = (snr, sisnr, pesq_wb, pesq_nb, stoi)
+        opr = (snr, sisnr, pesq_wb, pesq_nb, stoi) #打包,以供传参
         for mixn, spk1, spk2, sr, filename in dataloader:
             cnt += 1
+            #首先,将所有的数据移入对应设备.仅当使用评估时才移动GT的数据
             mixn = mixn.to(device)
             if not self.no_criterion:
                 spk1 = spk1.to(device)
                 spk2 = spk2.to(device)
+            #如果仅评估数据集,则相当于预测结果就是mixn本身
             if self.measure_dataset_only:
                 spk1_est = mixn
                 spk2_est = mixn
@@ -123,10 +126,11 @@ class Tester:
                 spk1_est, spk2_est = model(mixn)
             else:
                 spk1_est, spk2_est = torch.nn.parallel.data_parallel(model,mixn,device_ids=gpuid)
-            
+            #保存预测的音频文件
             if (not self.measure_dataset_only) and self.save_path is not None:
                 torchaudio.save(self.save_spk1(filename[0]), spk1_est.squeeze(0).cpu(), sr.item())
                 torchaudio.save(self.save_spk2(filename[0]), spk2_est.squeeze(0).cpu(), sr.item())
+            #计算并收集指标
             if not self.no_criterion:
                 m = self.metric((spk1_est, spk2_est), (spk1, spk2), sr.item(), opr=opr)
                 for k,v in m.items():
@@ -141,12 +145,16 @@ class Tester:
         d = 0
         self.threads = []
         gpu_dist = None
+        #以下,为每个线程分配设备
+        #如果设备数少于或等于线程数,则依次分配
+        #如果GPU数量超过线程数,则启动data_parallel,为线程分配多个设备
         if len(self.gpuid) > self.num_threads:
             i = 0
             gpu_dist = [[] for _ in range(self.num_threads)]
             for gpu in self.gpuid:
                 gpu_dist[i].append(gpu)
                 i = (i+1) % self.num_threads
+        #启动线程并为每个线程分入一个sub_id,标志其需要处理的数据的起始
         for sub_id in range(self.num_threads):
             t = threading.Thread(target=self.do_test_job, 
                     args=(self.devices[d], sub_id, None if gpu_dist is None else gpu_dist[sub_id]))
@@ -154,8 +162,10 @@ class Tester:
             self.threads.append(t)
             d = (d+1) % len(self.devices)
             logger.info(f"Created thread[{sub_id}] {t}")
+        #等待所有线程结束
         for t in self.threads:
             t.join()
+        #根据配置保存结果
         if not self.no_criterion:
             metrics = defaultdict(lambda:0)
             cnt = 0

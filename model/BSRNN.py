@@ -33,8 +33,8 @@ class BandSplit(nn.Module):
         output = []
         for i,band in enumerate(self.bands):
             x_band = x[:,:,accum_band:accum_band+band,:]
-            B, _, Fs, S = x_band.shape
-            x_band = torch.reshape(x_band,[B, 2*Fs, S])
+            Batch, _, FreqSub, Seq = x_band.shape
+            x_band = torch.reshape(x_band,[Batch, 2*FreqSub, Seq])
             out = self.norm[i](x_band)
             out = self.fc[i](out.transpose(1,2))
             output.append(out.transpose(1,2))
@@ -51,6 +51,7 @@ class MaskDecoder(nn.Module):
         
     
     def _build_layer(self, band, feature_dim):
+        '''搭建band的mask预测网络'''
         return nn.Sequential(nn.GroupNorm(1, feature_dim),
             nn.Conv1d(feature_dim, feature_dim*4, 1),
             nn.Tanh(),
@@ -92,13 +93,13 @@ class BSModel(nn.Module):
         self.seq_rnn = RNNBlock(self.feature_dim, self.feature_dim*2)
 
     def forward(self, x):
-        B, nBand, N, S = x.shape  #[4, 31, 80, 259]
-        band_output = self.band_rnn(x.view(B*nBand, N, -1)).view(B, nBand, N, S)  #[4, 31, 80, 259]
-        # band comm
-        band_output = band_output.permute(0,3,2,1).contiguous().view(B*S, -1, nBand) #[4*259, 80, 31]
-        # band_comm([B*T, N, K])
-        output = self.seq_rnn(band_output).view(B, S, -1, nBand).permute(0,3,2,1).contiguous()
-        return output.view(B, nBand, N, S)
+        Batch, nBand, Feat, Seq = x.shape  
+        #band rnn
+        band_output = self.band_rnn(x.view(Batch*nBand, Feat, -1)).view(Batch, nBand, Feat, Seq)  
+        #seq rnn
+        band_output = band_output.permute(0,3,2,1).contiguous().view(Batch*Seq, -1, nBand) 
+        output = self.seq_rnn(band_output).view(Batch, Seq, -1, nBand).permute(0,3,2,1).contiguous()
+        return output.view(Batch, nBand, Feat, Seq)
     
 
 class BSRNN(nn.Module):
@@ -150,18 +151,18 @@ class BSRNN(nn.Module):
         return bands
 
     def forward(self, x):
-        B, C, T = x.shape #[4, 1, 132300]
-        x = x.view(B*C, T)
-        window = torch.hann_window(self.win).to(x.device).type(x.type()) #Tensor[2048]
+        Batch, Channel, Times = x.shape 
+        x = x.view(Batch*Channel, Times)
+        window = torch.hann_window(self.win).to(x.device).type(x.type()) 
 
         spec = torch.stft(x, n_fft=self.win, hop_length=self.stride, 
-                          window=window,return_complex=True) #Complex[4, 1025, 259]=[Batch, Freq, Seq] 
-        spec_ri = torch.stack([spec.real, spec.imag], dim=1) #[4,2,1025,259]=[Batch, RI, Freq, Seq]
+                          window=window,return_complex=True) #Complex[Batch, Freq, Seq] 
+        spec_ri = torch.stack([spec.real, spec.imag], dim=1) #[Batch, RI, Freq, Seq]
         
-        subband_spec = self.band_split(spec_ri) #[4, 31, 80, 259]=[BatchCh, Band, Feature, Seq]
-        B, nBand, N, S = subband_spec.shape
+        subband_spec = self.band_split(spec_ri) #[BatchCh, Band, Feature, Seq]
+        Batch, nBand, Feat, Seq = subband_spec.shape
 
-        sep_output = self.bs_model(subband_spec) #[4, 31, 80, 259]
+        sep_output = self.bs_model(subband_spec) 
 
         if self.num_spk_layer:
             sep_output1 = self.spk1_bs_model(sep_output)
@@ -170,33 +171,38 @@ class BSRNN(nn.Module):
             sep_output1 = sep_output
             sep_output2 = sep_output
 
-        est_spec1 = self.mask_decoder1(sep_output1, spec) #est_spec:[BatchCh, Freq, Seq]
+        est_spec1 = self.mask_decoder1(sep_output1, spec) #[BatchCh, Freq, Seq]
         output1 = torch.istft(est_spec1, n_fft=self.win, hop_length=self.stride, 
-                             window=window, length=T)
-        output1 = output1.view(B, C, -1)
+                             window=window, length=Times)
+        output1 = output1.view(Batch, Channel, -1)
 
-        est_spec2 = self.mask_decoder2(sep_output2, spec) #est_spec:[BatchCh, Freq, Seq]
+        est_spec2 = self.mask_decoder2(sep_output2, spec) #[BatchCh, Freq, Seq]
         output2 = torch.istft(est_spec2, n_fft=self.win, hop_length=self.stride, 
-                             window=window, length=T)
-        output2 = output2.view(B, C, -1)
+                             window=window, length=Times)
+        output2 = output2.view(Batch, Channel, -1)
 
         return output1, output2
+
+
 
     
 if __name__ == '__main__':
     from thop import profile, clever_format
     import numpy as np
-    model = BSRNN(sr=44100, win=2048, stride=512, feature_dim=80, num_layer=10)
+    model = BSRNN(sr=44100, win=2048, stride=512, feature_dim=80, num_layer=6, num_spk_layer=4, same_mask=True)
 
+    #参数量
     s = 0
     for param in model.parameters():
         s += np.product(param.size())
     print('# of parameters: '+str(s/1024.0/1024.0))
     
+    #输入输出
     x = torch.randn((4, 1, 441*3))
     o1, o2 = model(x)
     print(o1.shape, o2.shape)
 
+    #FLOPS计算量
     macs, params = profile(model, inputs=(x,))
     macs, params = clever_format([macs, params], "%.3f")
     print(macs, params)

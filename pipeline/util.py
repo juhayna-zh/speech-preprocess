@@ -48,6 +48,7 @@ def Loss(ests, egs):
     return -torch.sum(max_perutt) / N
 
 def collate_fn(batch):
+    '''如果batch_size>1, 则对音频进行零填充以对齐时间维度'''
     max_len = max([(d[0].shape[-1]) for d in batch])
     
     padded_batch_mix = torch.zeros(len(batch), 1, max_len)
