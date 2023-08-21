@@ -39,7 +39,7 @@ View demos [here](https://harsh-lawyer-1d0.notion.site/Speech-Preprocess-3d33405
 
 <br/>
 
-## Test & Train
+## Test & Train 🚂
 Python version is 3.8. Requirements can be installed by:
 ```
 pip install -r requirements.txt
