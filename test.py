@@ -7,7 +7,6 @@ import os
 from shutil import copyfile
 
 def main(args):
-    print('Hello')
     config_path = args.config
     with open(config_path, mode='r') as f:
         opt = yaml.load(f, Loader=yaml.FullLoader)

@@ -34,7 +34,7 @@ class Trainer:
         self.scheduler = self.make_scheduler(self.optimizer, opt)
 
         self.cur_epoch = 0
-        self.print_freq = 1
+        self.print_freq = 10
         self.total_epoch = opt['train']['epoch']
         self.clip_norm = opt['optim']['clip_norm']
         self.early_stop = opt['train']['early_stop']

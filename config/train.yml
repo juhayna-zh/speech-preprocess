@@ -1,7 +1,7 @@
 #### general settings
 name: bsrnn_minx
 device: cuda
-gpuid: [0,1,2,3,4,5,6,7]
+gpuid: null
 
 #### datasets setings
 datasets:
@@ -22,11 +22,11 @@ model:
 #### training settings: learning rate scheme, loss
 train:
   epoch: 100
-  batch_size: 8
+  batch_size: 1
   early_stop: 10
   sub_batch: 2000
-  save_stat_dir: /mnt/lustre/sjtu/home/hnz01/code/AILabInTask1/speech-preprocess/save/p55s_8w/trainstat
-  save_model_dir: /mnt/lustre/sjtu/home/hnz01/code/AILabInTask1/speech-preprocess/save/p55s_8w/checkpoint
+  save_stat_dir: /mnt/lustre/sjtu/home/hnz01/code/AILabInTask1/speech-preprocess/save/x55s_8w/trainstat
+  save_model_dir: /mnt/lustre/sjtu/home/hnz01/code/AILabInTask1/speech-preprocess/save/x55s_8w/checkpoint
 
 #### Optimizer settings
 optim:

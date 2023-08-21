@@ -21,6 +21,10 @@ class Tester:
         self.save_path = opt['test']['save_path']
         self.num_threads = opt['test']['num_threads']
         self.no_criterion = opt['test']['no_criterion']
+        self.measure_dataset_only = opt['test']['measure_dataset_only']
+
+        if self.measure_dataset_only:
+            self.save_path = self.data_path
 
         self.make_dirs()
         self.ckpt_path =opt['model']['checkpoint']
@@ -81,15 +85,16 @@ class Tester:
         return os.path.join(self.save_path, 'spk2_est', *args)
 
     def make_dirs(self):
-        if self.save_path is not None:
+        if (not self.measure_dataset_only) and self.save_path is not None:
             os.makedirs(self.save_path, exist_ok=True)
             os.makedirs(self.save_spk1(), exist_ok=True)
             os.makedirs(self.save_spk2(), exist_ok=True)
     
     def do_test_job(self, device, sub_id, gpuid=None):
-        model = self.make_model(self.train_opt).to(device)
-        self.load_checkpoint(model, device)
-        model.eval()
+        if not self.measure_dataset_only:
+            model = self.make_model(self.train_opt).to(device)
+            self.load_checkpoint(model, device)
+            model.eval()
         logger.info(f'Thread[{sub_id}]: load model done, run on {device}, gpuid={gpuid}')
         metrics = defaultdict(lambda:0)
         cnt = 0
@@ -111,11 +116,15 @@ class Tester:
             if not self.no_criterion:
                 spk1 = spk1.to(device)
                 spk2 = spk2.to(device)
-            if gpuid is None:
+            if self.measure_dataset_only:
+                spk1_est = mixn
+                spk2_est = mixn
+            elif gpuid is None:
                 spk1_est, spk2_est = model(mixn)
             else:
                 spk1_est, spk2_est = torch.nn.parallel.data_parallel(model,mixn,device_ids=gpuid)
-            if self.save_path is not None:
+            
+            if (not self.measure_dataset_only) and self.save_path is not None:
                 torchaudio.save(self.save_spk1(filename[0]), spk1_est.squeeze(0).cpu(), sr.item())
                 torchaudio.save(self.save_spk2(filename[0]), spk2_est.squeeze(0).cpu(), sr.item())
             if not self.no_criterion:
