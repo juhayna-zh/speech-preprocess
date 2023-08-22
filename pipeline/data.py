@@ -10,6 +10,8 @@ def read_audio(path, return_sr=False, resample_sr=None):
     if resample_sr is not None and resample_sr != sr:
         audio = Resample(sr, resample_sr)(audio)
         sr = resample_sr
+    if audio.shape[0] != 1:
+        audio = audio[0:1,:]
     if return_sr:
         return audio,sr
     else:
@@ -103,8 +105,8 @@ class TestMixnAudioDataset(Dataset):
     def __getitem__(self, i):
         filename = self.filenames[i]
         mixn_audio = read_audio(self.mixn_dir_+filename, resample_sr=self.sr)
-        spk1_audio = None if self.no_GT else read_audio(self.spk1_dir_+filename, resample_sr=self.sr)
-        spk2_audio = None if self.no_GT else read_audio(self.spk2_dir_+filename, resample_sr=self.sr)
+        spk1_audio = [] if self.no_GT else read_audio(self.spk1_dir_+filename, resample_sr=self.sr)
+        spk2_audio = [] if self.no_GT else read_audio(self.spk2_dir_+filename, resample_sr=self.sr)
         return mixn_audio, spk1_audio, spk2_audio, self.sr, filename
     
     def __len__(self):

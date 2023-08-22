@@ -12,8 +12,8 @@ model:
 #### test settings
 test:
   num_threads: 8 #[!] Number of threads used
-  data_path: speech-preprocess/data/Difficult1k  #[!] Fill the path to data directory
-  save_path: speech-preprocess/data/Difficult1k_result  #[!] path to save estimated wav files
+  data_path: speech-preprocess/data/Difficult30  #[!] Fill the path to data directory
+  save_path: speech-preprocess/data/Difficult30_result  #[!] path to save estimated wav files
   no_criterion: false # Toggle this option if no GT offered
   measure_dataset_only: false # Only measure the metrics of raw dataset
 
